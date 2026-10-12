@@ -6,35 +6,45 @@
   <meta name="robots" content="noindex,nofollow">
   <title>Управление сайтом — Top Music Production</title>
   <link rel="icon" href="assets/favicon.svg">
-  <link rel="stylesheet" href="assets/css/admin.css?v=1">
-  <script src="assets/js/admin.js?v=2" defer></script>
+  <link rel="stylesheet" href="assets/css/admin.css?v=2">
+  <script src="assets/js/admin.js?v=3" defer></script>
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="index.html"><img src="assets/icons/logo.svg" alt=""><span>TOP MUSIC <b>ADMIN</b></span></a>
-    <div class="topbar-actions"><a href="index.html" target="_blank" rel="noopener noreferrer">Открыть сайт ↗</a><button id="logout" type="button" hidden>Выйти</button></div>
+    <div class="topbar-actions"><a href="index.html" target="_blank" rel="noopener noreferrer">Смотреть сайт ↗</a><span id="currentUser" class="current-user" hidden></span><button id="logout" type="button" hidden>Выйти</button></div>
   </header>
 
   <main>
-    <section class="login card" id="loginPanel" aria-labelledby="loginTitle">
-      <p class="eyebrow">Управление сайтом</p>
-      <h1 id="loginTitle">Редактируйте и публикуйте</h1>
-      <p>Изменения сохраняются в общем репозитории и затем автоматически появляются на сайте. Для входа нужен доступ к <strong>wwoland/topmusic-site</strong>.</p>
-      <form id="loginForm">
-        <label for="token">GitHub-токен с правом записи в репозиторий</label>
-        <div class="token-row"><input id="token" type="password" autocomplete="off" spellcheck="false" required placeholder="github_pat_…"><button class="primary" type="submit">Войти</button></div>
-      </form>
-      <p class="hint">Каждый участник входит со своим GitHub-токеном. Владелец может использовать ограниченный токен с Contents: read and write; приглашённому соавтору нужен токен classic с правом public_repo. Токен не сохраняется в браузере. <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer">Создать токен ↗</a></p>
+    <section class="login" id="loginPanel" aria-labelledby="loginTitle">
+      <div class="login-intro">
+        <p class="eyebrow">Top Music / редактор</p>
+        <h1 id="loginTitle">Управляйте сайтом <span>вместе.</span></h1>
+        <p>Тексты, услуги, артисты и медиа — в одном месте. Правки каждого участника сохраняются в общем репозитории и появляются на сайте после публикации.</p>
+        <div class="login-points" aria-label="Возможности редактора"><span>01 <b>Меняйте контент</b></span><span>02 <b>Загружайте файлы</b></span><span>03 <b>Публикуйте на сайт</b></span></div>
+      </div>
+      <div class="login-card card">
+        <p class="eyebrow">Доступ к редактору</p>
+        <h2>Войти в админку</h2>
+        <p>Используйте свой GitHub-токен с правом записи в <strong>wwoland/topmusic-site</strong>.</p>
+        <form id="loginForm">
+          <label for="token">Личный GitHub-токен</label>
+          <div class="token-row"><input id="token" type="password" autocomplete="off" spellcheck="false" required placeholder="Вставьте токен"><button id="toggleToken" class="token-toggle" type="button" aria-label="Показать токен" aria-pressed="false">Показать</button></div>
+          <button class="primary login-submit" type="submit">Открыть редактор <span aria-hidden="true">↗</span></button>
+        </form>
+        <details class="login-help"><summary>Где взять токен?</summary><div><p>Каждый редактор создаёт свой токен один раз и входит с ним до окончания срока действия.</p><ol><li>Откройте создание токена GitHub (classic).</li><li>Отметьте только право <strong>public_repo</strong> и создайте токен.</li><li>Скопируйте его и вставьте в поле выше.</li></ol><a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer">Создать токен на GitHub ↗</a><p class="login-help-note">Владелец репозитория может использовать fine-grained токен с Contents: read and write. Токен не сохраняется в браузере.</p></div></details>
+      </div>
     </section>
 
     <section id="editorPanel" hidden>
-      <div class="intro"><div><p class="eyebrow">Редактор</p><h1>Содержимое сайта</h1><p>Выберите страницу, меняйте текст и ссылки или загружайте файлы. Кнопка «Опубликовать» отправляет изменения на сайт.</p></div><a class="site-link" id="previewLink" href="index.html" target="_blank" rel="noopener noreferrer">Посмотреть страницу ↗</a></div>
-      <div class="toolbar card"><div class="tabs" role="tablist" aria-label="Разделы админки"><button class="tab active" data-tab="pages" type="button">Страницы</button><button class="tab" data-tab="services" type="button">Услуги</button><button class="tab" data-tab="artists" type="button">Артисты</button><button class="tab" data-tab="files" type="button">Файлы</button></div><div class="publish"><span id="dirtyMark" class="dirty" hidden>Есть несохранённые изменения</span><button class="primary" id="publish" type="button" disabled>Опубликовать</button></div></div>
+      <div class="intro"><div><p class="eyebrow">Рабочее пространство</p><h1>Редактор сайта</h1><p>Выберите раздел, внесите изменения и опубликуйте их. Правки увидят все участники команды.</p></div><a class="site-link" id="previewLink" href="index.html" target="_blank" rel="noopener noreferrer">Посмотреть страницу ↗</a></div>
+      <div class="toolbar card"><div class="tabs" role="tablist" aria-label="Разделы админки"><button class="tab active" data-tab="pages" role="tab" aria-controls="pagesTab" aria-selected="true" type="button">Страницы</button><button class="tab" data-tab="services" role="tab" aria-controls="servicesTab" aria-selected="false" type="button">Услуги</button><button class="tab" data-tab="artists" role="tab" aria-controls="artistsTab" aria-selected="false" type="button">Артисты</button><button class="tab" data-tab="files" role="tab" aria-controls="filesTab" aria-selected="false" type="button">Файлы</button></div><div class="publish"><span id="dirtyMark" class="save-state" role="status" aria-live="polite">Все изменения сохранены</span><button class="primary" id="publish" type="button" disabled>Опубликовать ↗</button></div></div>
 
       <section id="pagesTab" class="tab-panel">
-        <div class="controls card"><label>Страница<select id="pageSelect"><option value="index.html">Главная</option><option value="pages/label.html">Лейбл</option><option value="pages/services.html">Продакшн</option><option value="pages/studio.html">Студия</option></select></label><label>Найти поле<input id="fieldSearch" type="search" placeholder="Например, скидка или отзыв"></label></div>
-        <div class="tip">Текст сохраняется без изменения оформления. Для изображения или видео укажите ссылку либо загрузите файл прямо в нужное поле. Кнопки и другие ссылки редактируются отдельно.</div>
+        <div class="controls card"><label>Страница<select id="pageSelect"><option value="index.html">Главная</option><option value="pages/label.html">Лейбл</option><option value="pages/services.html">Продакшн</option><option value="pages/studio.html">Студия</option></select></label><label>Поиск по странице<input id="fieldSearch" type="search" placeholder="Например, скидка или отзыв" autocomplete="off"></label><div class="field-tools"><span id="fieldSearchSummary" role="status" aria-live="polite"></span><button id="toggleGroups" class="text-button" type="button">Развернуть все ↓</button></div></div>
+        <div class="tip">Откройте нужный блок и меняйте текст, ссылки или файлы. Дизайн страницы останется прежним.</div>
         <div id="pageFields" class="field-groups"></div>
+        <p id="fieldEmpty" class="field-empty card" hidden>Ничего не найдено. Попробуйте другое слово.</p>
       </section>
 
       <section id="artistsTab" class="tab-panel" hidden><div class="tip">В каждом блоке артисты идут по порядку показа: чем выше имя, тем чаще оно появляется на витрине.</div><div id="artistPools"></div></section>

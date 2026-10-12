@@ -4,6 +4,13 @@
   const BRANCH = 'main';
   const MAX_FILE_BYTES = 50 * 1024 * 1024;
   const ACCEPTED = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'webm', 'mp3', 'm4a', 'wav', 'pdf']);
+  const SERVICE_TITLES = {
+    pesnya: 'Ваша песня под ключ', 'sozdanie-pesni': 'Песня с нуля под ключ', zapis: 'Почасовая работа в студии',
+    aranzhirovka: 'Аранжировка', svedenie: 'Сведение PRO', 'svedenie-golos': 'Сведение голоса с минусовкой',
+    mastering: 'Мастеринг', 'analog-mastering': 'Аналоговый мастеринг', 'soprovoditelnaya-muzyka': 'Сопровождающая музыка',
+    'svedenie-show': 'Сведение шоу', ozvuchka: 'Озвучка', dizain: 'Дизайн обложки', 'social-design': 'Дизайн соцсетей',
+    'reels-shoot': 'Съёмка рилс', site: 'Сайт', video: 'Клип', ghostwriting: 'Гострайтинг', songwriting: 'Сонграйтинг'
+  };
   const $ = id => document.getElementById(id);
   let token = '';
   let tab = 'pages';
@@ -28,7 +35,8 @@
 
   function setDirty(value) {
     dirty = value;
-    $('dirtyMark').hidden = !value;
+    $('dirtyMark').textContent = value ? 'Есть неопубликованные правки' : 'Все изменения сохранены';
+    $('dirtyMark').classList.toggle('is-dirty', value);
     $('publish').disabled = !value;
   }
 
@@ -102,12 +110,19 @@
     const candidate = $('token').value.trim();
     if (!candidate) return;
     token = candidate;
-    $('loginForm').querySelector('button').disabled = true;
+    const submit = $('loginForm').querySelector('[type=submit]');
+    submit.disabled = true;
+    submit.textContent = 'Проверяем доступ…';
     try {
-      await request('https://api.github.com/user');
+      const user = await request('https://api.github.com/user');
       const repo = await request(API);
       if (!repo.permissions?.push) throw new Error('У этого аккаунта нет права записи в репозиторий. Добавьте клиента как соавтора.');
       $('token').value = '';
+      $('token').type = 'password';
+      $('toggleToken').textContent = 'Показать';
+      $('toggleToken').setAttribute('aria-pressed', 'false');
+      $('currentUser').textContent = `@${user.login}`;
+      $('currentUser').hidden = false;
       $('loginPanel').hidden = true;
       $('editorPanel').hidden = false;
       $('logout').hidden = false;
@@ -117,7 +132,8 @@
       token = '';
       message(error.message, true);
     } finally {
-      $('loginForm').querySelector('button').disabled = false;
+      submit.disabled = false;
+      submit.innerHTML = 'Открыть редактор <span aria-hidden="true">↗</span>';
     }
   }
 
@@ -146,9 +162,14 @@
     heading.className = 'field-title';
     const strong = document.createElement('strong');
     strong.textContent = title;
-    heading.append(strong, document.createTextNode(description));
+    const preview = document.createElement('span');
+    preview.className = 'field-description';
+    preview.textContent = description || title;
+    heading.append(strong, preview);
     const side = document.createElement('div');
     side.className = 'field-control';
+    const editable = control.matches?.('input,textarea') ? control : control.querySelector('input:not([type=file]),textarea');
+    if (editable && !editable.hasAttribute('aria-label')) editable.setAttribute('aria-label', `${title}: ${description || title}`);
     side.append(control);
     row.append(heading, side);
     return row;
@@ -237,28 +258,42 @@
       const details = document.createElement('details');
       details.className = 'field-group';
       const summary = document.createElement('summary');
-      summary.textContent = `${name} · ${fields.length}`;
+      const title = document.createElement('span');
+      title.className = 'group-title';
+      title.textContent = name;
+      const count = document.createElement('span');
+      count.className = 'group-count';
+      count.textContent = `${fields.length} полей`;
+      summary.append(title, count);
       const body = document.createElement('div');
       body.className = 'field-group-body';
       body.append(...fields);
       details.append(summary, body);
       container.append(details);
     }
+    container.querySelector('.field-group')?.setAttribute('open', '');
     filterFields();
   }
 
   function filterFields() {
     const query = $('fieldSearch').value.trim().toLocaleLowerCase('ru');
+    let visibleTotal = 0;
+    let allTotal = 0;
     for (const group of $('pageFields').querySelectorAll('.field-group')) {
       let visible = 0;
       for (const field of group.querySelectorAll('.field')) {
-        const match = !query || field.textContent.toLocaleLowerCase('ru').includes(query) || field.querySelector('input,textarea')?.value.toLocaleLowerCase('ru').includes(query);
+        allTotal++;
+        const match = !query || field.textContent.toLocaleLowerCase('ru').includes(query) || [...field.querySelectorAll('input,textarea')].some(input => input.value.toLocaleLowerCase('ru').includes(query));
         field.hidden = !match;
         if (match) visible++;
       }
+      visibleTotal += visible;
       group.hidden = !visible;
       if (query && visible) group.open = true;
     }
+    $('fieldSearchSummary').textContent = query ? `Найдено ${visibleTotal} из ${allTotal}` : `${allTotal} полей на странице`;
+    $('fieldEmpty').hidden = visibleTotal > 0;
+    $('toggleGroups').hidden = !visibleTotal;
   }
 
   function validLinks() {
@@ -330,7 +365,7 @@
       const section = document.createElement('details');
       section.className = 'field-group';
       const summary = document.createElement('summary');
-      summary.textContent = id.replaceAll('-', ' ');
+      summary.textContent = SERVICE_TITLES[id] || id.replaceAll('-', ' ');
       const body = document.createElement('div');
       body.className = 'field-group-body';
       for (const [key, label] of [['intro', 'Вступление'], ['points', 'Что входит — по одному пункту на строке'], ['note', 'Примечание'], ['result', 'Итог']]) {
@@ -441,7 +476,11 @@
     if (next === tab || !ensureSaved()) return;
     tab = next;
     setDirty(false);
-    for (const button of document.querySelectorAll('[data-tab]')) button.classList.toggle('active', button.dataset.tab === next);
+    for (const button of document.querySelectorAll('[data-tab]')) {
+      const active = button.dataset.tab === next;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', String(active));
+    }
     for (const name of ['pages', 'services', 'artists', 'files']) $(`${name}Tab`).hidden = name !== next;
     if (next === 'artists') await loadArtists();
     if (next === 'services') await loadServices();
@@ -452,11 +491,25 @@
   $('logout').addEventListener('click', () => { token = ''; location.reload(); });
   $('publish').addEventListener('click', publish);
   $('fieldSearch').addEventListener('input', filterFields);
+  $('toggleGroups').addEventListener('click', () => {
+    const groups = [...$('pageFields').querySelectorAll('.field-group:not([hidden])')];
+    const expand = groups.some(group => !group.open);
+    groups.forEach(group => { group.open = expand; });
+    $('toggleGroups').textContent = expand ? 'Свернуть все ↑' : 'Развернуть все ↓';
+  });
+  $('toggleToken').addEventListener('click', () => {
+    const visible = $('token').type === 'password';
+    $('token').type = visible ? 'text' : 'password';
+    $('toggleToken').textContent = visible ? 'Скрыть' : 'Показать';
+    $('toggleToken').setAttribute('aria-pressed', String(visible));
+    $('toggleToken').setAttribute('aria-label', visible ? 'Скрыть токен' : 'Показать токен');
+  });
   $('uploadStandalone').addEventListener('click', uploadStandalone);
   $('pageSelect').addEventListener('change', async event => {
     const next = event.target.value;
     if (!ensureSaved()) { event.target.value = pagePath; return; }
     setDirty(false);
+    $('fieldSearch').value = '';
     await loadPage(next);
   });
   document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => changeTab(button.dataset.tab)));
