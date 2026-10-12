@@ -6,8 +6,8 @@
   <meta name="robots" content="noindex,nofollow">
   <title>Управление сайтом — Top Music Production</title>
   <link rel="icon" href="assets/favicon.svg">
-  <link rel="stylesheet" href="assets/css/admin.css?v=2">
-  <script src="assets/js/admin.js?v=3" defer></script>
+  <link rel="stylesheet" href="assets/css/admin.css?v=3">
+  <script src="assets/js/admin.js?v=4" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -41,8 +41,8 @@
       <div class="toolbar card"><div class="tabs" role="tablist" aria-label="Разделы админки"><button class="tab active" data-tab="pages" role="tab" aria-controls="pagesTab" aria-selected="true" type="button">Страницы</button><button class="tab" data-tab="services" role="tab" aria-controls="servicesTab" aria-selected="false" type="button">Услуги</button><button class="tab" data-tab="artists" role="tab" aria-controls="artistsTab" aria-selected="false" type="button">Артисты</button><button class="tab" data-tab="files" role="tab" aria-controls="filesTab" aria-selected="false" type="button">Файлы</button></div><div class="publish"><span id="dirtyMark" class="save-state" role="status" aria-live="polite">Все изменения сохранены</span><button class="primary" id="publish" type="button" disabled>Опубликовать ↗</button></div></div>
 
       <section id="pagesTab" class="tab-panel">
-        <div class="controls card"><label>Страница<select id="pageSelect"><option value="index.html">Главная</option><option value="pages/label.html">Лейбл</option><option value="pages/services.html">Продакшн</option><option value="pages/studio.html">Студия</option></select></label><label>Поиск по странице<input id="fieldSearch" type="search" placeholder="Например, скидка или отзыв" autocomplete="off"></label><div class="field-tools"><span id="fieldSearchSummary" role="status" aria-live="polite"></span><button id="toggleGroups" class="text-button" type="button">Развернуть все ↓</button></div></div>
-        <div class="tip">Откройте нужный блок и меняйте текст, ссылки или файлы. Дизайн страницы останется прежним.</div>
+        <div class="controls card"><label>Страница<select id="pageSelect"><option value="index.html">Главная</option><option value="pages/label.html">Лейбл</option><option value="pages/services.html">Продакшн</option><option value="pages/studio.html">Студия</option></select></label><label>Поиск по странице<input id="fieldSearch" type="search" placeholder="Например, скидка или отзыв" autocomplete="off"></label><div class="field-tools"><span id="fieldSearchSummary" role="status" aria-live="polite"></span><button id="toggleGroups" class="text-button" type="button">Развернуть все ↓</button></div><div class="field-filters" role="group" aria-label="Показать поля"><button class="field-filter active" data-field-filter="all" type="button" aria-pressed="true">Всё</button><button class="field-filter" data-field-filter="text" type="button" aria-pressed="false">Тексты</button><button class="field-filter" data-field-filter="link" type="button" aria-pressed="false">Кнопки и ссылки</button><button class="field-filter" data-field-filter="media" type="button" aria-pressed="false">Фото и видео</button></div></div>
+        <div class="tip">Выберите блок сайта. Для кнопок укажите, куда они ведут: страницу, раздел сайта или внешний адрес. Фото и видео можно заменить загрузкой файла.</div>
         <div id="pageFields" class="field-groups"></div>
         <p id="fieldEmpty" class="field-empty card" hidden>Ничего не найдено. Попробуйте другое слово.</p>
       </section>

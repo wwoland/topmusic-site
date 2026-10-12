@@ -11,9 +11,23 @@
     'svedenie-show': 'Сведение шоу', ozvuchka: 'Озвучка', dizain: 'Дизайн обложки', 'social-design': 'Дизайн соцсетей',
     'reels-shoot': 'Съёмка рилс', site: 'Сайт', video: 'Клип', ghostwriting: 'Гострайтинг', songwriting: 'Сонграйтинг'
   };
+  const SITE_PAGES = [
+    { id: 'home', label: 'Главная', path: 'index.html' },
+    { id: 'label', label: 'Лейбл', path: 'pages/label.html' },
+    { id: 'production', label: 'Продакшн', path: 'pages/services.html' },
+    { id: 'studio', label: 'Студия', path: 'pages/studio.html' }
+  ];
+  const SITE_SECTIONS = [
+    { id: 'contact', label: 'Главная → Связаться', path: 'index.html', hash: '#contact' },
+    { id: 'artists', label: 'Главная → С кем мы работаем', path: 'index.html', hash: '#artists' },
+    { id: 'reviews', label: 'Главная → Отзывы', path: 'index.html', hash: '#reviews' },
+    { id: 'partnership', label: 'Лейбл → Партнёрство', path: 'pages/label.html', hash: '#partnership' },
+    { id: 'booking', label: 'Студия → Бронирование', path: 'pages/studio.html', hash: '#booking' }
+  ];
   const $ = id => document.getElementById(id);
   let token = '';
   let tab = 'pages';
+  let fieldFilter = 'all';
   let pagePath = 'index.html';
   let pageSha = '';
   let pageDoc = null;
@@ -126,8 +140,7 @@
       $('loginPanel').hidden = true;
       $('editorPanel').hidden = false;
       $('logout').hidden = false;
-      await loadPage(pagePath);
-      message('Доступ подтверждён. Можно редактировать сайт.');
+      if (await loadPage(pagePath)) message('Доступ подтверждён. Можно редактировать сайт.');
     } catch (error) {
       token = '';
       message(error.message, true);
@@ -149,15 +162,19 @@
       $('previewLink').href = path;
       renderPage();
       setDirty(false);
+      return true;
     } catch (error) {
       $('pageFields').textContent = '';
+      $('pageSelect').value = pagePath;
       message(error.message, true);
+      return false;
     }
   }
 
-  function makeField(title, description, control) {
+  function makeField(title, description, control, kind = 'text') {
     const row = document.createElement('div');
     row.className = 'field';
+    row.dataset.kind = kind;
     const heading = document.createElement('div');
     heading.className = 'field-title';
     const strong = document.createElement('strong');
@@ -189,6 +206,138 @@
     return groups.get(name);
   }
 
+  function pageLink(path, hash = '') {
+    const relative = pagePath.startsWith('pages/')
+      ? path === 'index.html' ? '../index.html' : path.replace(/^pages\//, '')
+      : path;
+    return relative + hash;
+  }
+
+  function linkDestinations() {
+    const items = [
+      ...SITE_PAGES.map(page => ({ id: `page:${page.id}`, label: page.label, href: pageLink(page.path) })),
+      ...SITE_SECTIONS.map(section => ({ id: `section:${section.id}`, label: section.label, href: pageLink(section.path, section.hash) }))
+    ];
+    for (const anchor of pageDoc.body.querySelectorAll('a[href^="#"]')) {
+      const hash = anchor.getAttribute('href');
+      if (hash.length < 2 || items.some(item => item.href === hash || item.href.endsWith(hash) && item.href.startsWith(pageLink(pagePath)))) continue;
+      const target = pageDoc.getElementById(hash.slice(1));
+      if (!target) continue;
+      const heading = target.matches('h1,h2,h3') ? target : target.querySelector('h1,h2,h3');
+      const label = heading?.textContent.trim().slice(0, 55) || anchor.textContent.trim().slice(0, 55) || hash.slice(1);
+      items.push({ id: `local:${hash.slice(1)}`, label: `Этот экран · ${label}`, href: hash });
+    }
+    return items;
+  }
+
+  function destinationFor(href, items) {
+    if (href === '#') return 'top';
+    if (/^tel:/i.test(href)) return 'phone';
+    if (/^mailto:/i.test(href)) return 'email';
+    if (/^https?:\/\//i.test(href) && !/^https?:\/\/(?:www\.)?topmusic\.studio\//i.test(href)) return 'external';
+    try {
+      const base = new URL(pagePath, new URL('.', location.href));
+      const target = new URL(href, base);
+      const found = items.find(item => {
+        const option = new URL(item.href, base);
+        return option.pathname === target.pathname && option.hash === target.hash;
+      });
+      if (found) return found.id;
+    } catch (_) { /* Keep unknown addresses editable. */ }
+    return 'custom';
+  }
+
+  function makeLinkControl(element, items) {
+    const wrap = document.createElement('div');
+    wrap.className = 'link-editor';
+    const label = document.createElement('label');
+    label.textContent = 'Куда ведёт';
+    const select = document.createElement('select');
+    select.className = 'link-destination';
+    const addOptions = (title, options) => {
+      const group = document.createElement('optgroup');
+      group.label = title;
+      for (const item of options) group.append(new Option(item.label, item.id));
+      select.append(group);
+    };
+    addOptions('Страницы сайта', items.filter(item => item.id.startsWith('page:')));
+    addOptions('Разделы сайта', items.filter(item => !item.id.startsWith('page:')));
+    addOptions('Другие варианты', [
+      { id: 'external', label: 'Внешний сайт или соцсеть' },
+      { id: 'phone', label: 'Позвонить по телефону' },
+      { id: 'email', label: 'Написать на почту' },
+      { id: 'top', label: 'Наверх этой страницы' },
+      { id: 'custom', label: 'Другой адрес (для специалиста)' }
+    ]);
+    label.append(select);
+    const custom = document.createElement('label');
+    custom.className = 'link-custom';
+    const customTitle = document.createElement('span');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.autocomplete = 'off';
+    const hint = document.createElement('p');
+    hint.className = 'link-hint';
+    const verify = document.createElement('a');
+    verify.className = 'link-verify';
+    verify.textContent = 'Проверить переход ↗';
+    verify.target = '_blank';
+    verify.rel = 'noopener noreferrer';
+    custom.append(customTitle, input);
+    wrap.append(label, custom, hint, verify);
+
+    const initialHref = element.getAttribute('href') || '';
+    select.value = destinationFor(initialHref, items);
+    const customValues = {
+      external: /^https?:\/\//i.test(initialHref) ? initialHref : '',
+      phone: /^tel:/i.test(initialHref) ? initialHref.slice(4) : '',
+      email: /^mailto:/i.test(initialHref) ? initialHref.slice(7) : '',
+      custom: initialHref
+    };
+    function updateView() {
+      const choice = select.value;
+      const manual = ['external', 'phone', 'email', 'custom'].includes(choice);
+      custom.hidden = !manual;
+      if (manual) {
+        customTitle.textContent = { external: 'Адрес сайта', phone: 'Номер телефона', email: 'Адрес почты', custom: 'Адрес ссылки' }[choice];
+        input.placeholder = { external: 'https://example.com', phone: '+7 999 123-45-67', email: 'name@example.com', custom: 'Адрес' }[choice];
+        if (input.value !== (customValues[choice] || '')) input.value = customValues[choice] || '';
+      }
+      const selected = items.find(item => item.id === choice);
+      hint.textContent = selected ? `Посетитель перейдёт: ${selected.label}` : {
+        external: 'Вставьте полный адрес из браузера, начиная с https://',
+        phone: 'При нажатии откроется звонок на этот номер.',
+        email: 'При нажатии откроется письмо на этот адрес.',
+        top: 'При нажатии страница прокрутится к началу.',
+        custom: 'Используйте этот вариант, если нужного раздела нет в списке.'
+      }[choice];
+      const current = element.getAttribute('href') || '';
+      try {
+        const canVerify = current && current !== '#' && !/^(?:javascript|data|vbscript|tel|mailto):/i.test(current);
+        const url = canVerify && new URL(current, new URL(pagePath, new URL('.', location.href)));
+        verify.hidden = !url;
+        if (url) verify.href = url.href;
+      } catch (_) { verify.hidden = true; }
+    }
+    select.addEventListener('change', () => {
+      const selected = items.find(item => item.id === select.value);
+      const value = selected?.href || (select.value === 'top' ? '#' : '');
+      element.setAttribute('href', value);
+      setDirty(true);
+      updateView();
+    });
+    input.addEventListener('input', () => {
+      customValues[select.value] = input.value;
+      const value = select.value === 'phone' ? `tel:${input.value.replace(/[^+\d]/g, '')}`
+        : select.value === 'email' ? `mailto:${input.value.trim()}` : input.value.trim();
+      element.setAttribute('href', value);
+      setDirty(true);
+      updateView();
+    });
+    updateView();
+    return wrap;
+  }
+
   function renderPage() {
     if (!pageDoc) return;
     const groups = new Map();
@@ -208,29 +357,34 @@
         node.nodeValue = leading + input.value + trailing;
         setDirty(true);
       });
-      addGroup(groups, groupName(parent)).push(makeField('Текст', value.slice(0, 95), input));
+      addGroup(groups, groupName(parent)).push(makeField('Текст на странице', value.slice(0, 95), input, 'text'));
     }
 
+    const destinations = linkDestinations();
     for (const element of pageDoc.body.querySelectorAll('a[href]')) {
-      const input = document.createElement('input');
-      input.type = 'url';
-      input.value = element.getAttribute('href');
-      input.addEventListener('input', () => { element.setAttribute('href', input.value.trim()); setDirty(true); });
-      addGroup(groups, groupName(element)).push(makeField('Ссылка', element.textContent.trim().slice(0, 95) || 'Без подписи', input));
+      const name = element.textContent.trim().slice(0, 95) || element.querySelector('img')?.getAttribute('alt') || 'Логотип или иконка';
+      addGroup(groups, groupName(element)).push(makeField('Переход по нажатию', name, makeLinkControl(element, destinations), 'link'));
     }
 
     for (const element of pageDoc.body.querySelectorAll('img[src],source[src],video[poster]')) {
       const attribute = element.hasAttribute('src') ? 'src' : 'poster';
       const current = element.getAttribute(attribute);
       const wrapper = document.createElement('div');
-      wrapper.className = 'field-media';
+      wrapper.className = 'media-editor';
+      const currentLabel = document.createElement('p');
+      currentLabel.className = 'media-current';
+      currentLabel.textContent = current ? `Сейчас используется: ${decodeURIComponent(current.split('/').pop().split('?')[0])}` : 'Файл ещё не выбран';
       const input = document.createElement('input');
       input.value = current;
-      input.addEventListener('input', () => { element.setAttribute(attribute, input.value.trim()); setDirty(true); });
+      input.addEventListener('input', () => {
+        element.setAttribute(attribute, input.value.trim());
+        currentLabel.textContent = input.value.trim() ? 'Указан новый адрес файла' : 'Файл ещё не выбран';
+        setDirty(true);
+      });
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'small-button';
-      button.textContent = 'Загрузить файл';
+      button.textContent = 'Заменить файл ↑';
       const picker = document.createElement('input');
       picker.type = 'file';
       picker.accept = 'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/mp4,audio/wav';
@@ -242,14 +396,23 @@
           const relative = pagePath.startsWith('pages/') ? `../${path}` : path;
           input.value = relative;
           element.setAttribute(attribute, relative);
+          currentLabel.textContent = `Выбран новый файл: ${picker.files[0].name}`;
           setDirty(true);
           message('Файл загружен. Нажмите «Опубликовать», чтобы поставить его на страницу.');
         } catch (error) { message(error.message, true); }
         finally { button.disabled = false; picker.value = ''; }
       });
       button.addEventListener('click', () => picker.click());
-      wrapper.append(input, button, picker);
-      addGroup(groups, groupName(element)).push(makeField('Изображение / видео', element.getAttribute('alt') || current, wrapper));
+      const advanced = document.createElement('details');
+      advanced.className = 'media-advanced';
+      const summary = document.createElement('summary');
+      summary.textContent = 'Указать адрес файла вручную';
+      const note = document.createElement('p');
+      note.textContent = 'Если файл уже в интернете, вставьте его полный адрес, начиная с https://';
+      advanced.append(summary, note, input);
+      wrapper.append(currentLabel, button, picker, advanced);
+      const description = element.getAttribute('alt') || (current.includes('logo') ? 'Логотип сайта' : 'Фото или видео в этом блоке');
+      addGroup(groups, groupName(element)).push(makeField('Фото или видео', description, wrapper, 'media'));
     }
 
     const container = $('pageFields');
@@ -283,7 +446,11 @@
       let visible = 0;
       for (const field of group.querySelectorAll('.field')) {
         allTotal++;
-        const match = !query || field.textContent.toLocaleLowerCase('ru').includes(query) || [...field.querySelectorAll('input,textarea')].some(input => input.value.toLocaleLowerCase('ru').includes(query));
+        const fieldText = field.querySelector('.field-title')?.textContent || '';
+        const values = [...field.querySelectorAll('input,textarea')].map(input => input.value).join(' ');
+        const selected = field.querySelector('.link-destination')?.selectedOptions[0]?.textContent || '';
+        const match = (fieldFilter === 'all' || field.dataset.kind === fieldFilter)
+          && (!query || `${fieldText} ${values} ${selected}`.toLocaleLowerCase('ru').includes(query));
         field.hidden = !match;
         if (match) visible++;
       }
@@ -291,7 +458,7 @@
       group.hidden = !visible;
       if (query && visible) group.open = true;
     }
-    $('fieldSearchSummary').textContent = query ? `Найдено ${visibleTotal} из ${allTotal}` : `${allTotal} полей на странице`;
+    $('fieldSearchSummary').textContent = query || fieldFilter !== 'all' ? `Показано ${visibleTotal} из ${allTotal}` : `${allTotal} полей на странице`;
     $('fieldEmpty').hidden = visibleTotal > 0;
     $('toggleGroups').hidden = !visibleTotal;
   }
@@ -299,7 +466,12 @@
   function validLinks() {
     for (const element of pageDoc.body.querySelectorAll('a[href],img[src],source[src],video[poster]')) {
       const value = element.getAttribute(element.hasAttribute('href') ? 'href' : element.hasAttribute('src') ? 'src' : 'poster');
-      if ((!value && element.tagName === 'A') || (value && /^(javascript|data|vbscript):/i.test(value.trim()))) throw new Error('Обнаружена пустая или небезопасная ссылка. Исправьте её перед публикацией.');
+      const label = element.textContent.trim().slice(0, 55) || element.getAttribute('alt') || 'элемента без подписи';
+      if ((!value && element.tagName === 'A') || /^(tel|mailto):\s*$/i.test(value || '')) throw new Error(`У кнопки «${label}» не указан адрес. Выберите, куда она ведёт.`);
+      if (value && /^(javascript|data|vbscript):/i.test(value.trim())) throw new Error(`У элемента «${label}» недопустимый адрес. Укажите другой.`);
+      if (value && /^https?:/i.test(value)) {
+        try { new URL(value); } catch (_) { throw new Error(`Проверьте адрес у «${label}»: он должен начинаться с https:// и содержать название сайта.`); }
+      }
     }
   }
 
@@ -491,6 +663,15 @@
   $('logout').addEventListener('click', () => { token = ''; location.reload(); });
   $('publish').addEventListener('click', publish);
   $('fieldSearch').addEventListener('input', filterFields);
+  document.querySelectorAll('[data-field-filter]').forEach(button => button.addEventListener('click', () => {
+    fieldFilter = button.dataset.fieldFilter;
+    document.querySelectorAll('[data-field-filter]').forEach(item => {
+      const active = item === button;
+      item.classList.toggle('active', active);
+      item.setAttribute('aria-pressed', String(active));
+    });
+    filterFields();
+  }));
   $('toggleGroups').addEventListener('click', () => {
     const groups = [...$('pageFields').querySelectorAll('.field-group:not([hidden])')];
     const expand = groups.some(group => !group.open);
