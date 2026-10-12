@@ -171,6 +171,10 @@ nav.stuck{background:rgba(17,17,17,.93);backdrop-filter:blur(20px);padding:1.1re
 .brand-c{font-size:.56em;line-height:0;vertical-align:super;display:inline-block;transform:translateY(-.08em)}
 .n-logo:hover .nav-logo-svg,.n-logo:focus-visible .nav-logo-svg{opacity:0;transform:scale(.92)}
 .n-logo:hover .nav-logo-text,.n-logo:focus-visible .nav-logo-text{opacity:1;transform:translateY(-50%) scale(1)}
+@media (hover:none),(max-width:900px){
+  .nav-logo-text{display:none}
+  .n-logo:hover .nav-logo-svg,.n-logo:focus-visible .nav-logo-svg{opacity:1;transform:none}
+}
 .n-logo b{color:var(--red)}
 .n-brandline{
   margin-left:calc(1rem + 60px);
@@ -874,6 +878,8 @@ nav.stuck{background:rgba(17,17,17,.93);backdrop-filter:blur(20px);padding:1.1re
 .contact-btns a:nth-child(2){background:#174f9b}
 .contact-btns a:nth-child(3){background:linear-gradient(125deg,#54266d 0%,#762954 38%,#8f304d 64%,#98512f 100%)}
 .contact-btns a:nth-child(4){background:#28693c}
+.contact-btns .phone-mobile{display:none}
+@media(max-width:760px){.contact-btns .phone-desktop{display:none}.contact-btns .phone-mobile{display:inline}}
 .contact-btns .btn-red:hover,.contact-btns .btn-ghost:hover{color:#fff;filter:brightness(1.12);transform:translateY(-2px);animation:none}
 .contact-socials{display:flex;gap:2.5rem;justify-content:center;flex-wrap:wrap}
 .contact-socials a{font-family:'Unbounded',sans-serif;font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--line);padding-bottom:.2rem;transition:all .2s}

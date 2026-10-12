@@ -55,6 +55,10 @@ nav.stuck{background:rgba(17,17,17,.94);padding:1rem 2.5rem}
 .brand-c{font-size:.56em;line-height:0;vertical-align:super;display:inline-block;transform:translateY(-.08em)}
 .n-logo:hover .nav-logo-svg,.n-logo:focus-visible .nav-logo-svg{opacity:0;transform:scale(.92)}
 .n-logo:hover .nav-logo-text,.n-logo:focus-visible .nav-logo-text{opacity:1;transform:translateY(-50%) scale(1)}
+@media (hover:none),(max-width:900px){
+  .nav-logo-text{display:none}
+  .n-logo:hover .nav-logo-svg,.n-logo:focus-visible .nav-logo-svg{opacity:1;transform:none}
+}
 .n-back{font-family:'Unbounded',sans-serif;font-size:.52rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:.5rem;transition:color .2s}
 .n-back::before{content:'←'}
 .n-back:hover{color:var(--w)}

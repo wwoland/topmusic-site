@@ -7,7 +7,7 @@
   <title>Управление сайтом — Top Music Production</title>
   <link rel="icon" href="assets/favicon.svg">
   <link rel="stylesheet" href="assets/css/admin.css?v=1">
-  <script src="assets/js/admin.js?v=1" defer></script>
+  <script src="assets/js/admin.js?v=2" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -19,12 +19,12 @@
     <section class="login card" id="loginPanel" aria-labelledby="loginTitle">
       <p class="eyebrow">Управление сайтом</p>
       <h1 id="loginTitle">Редактируйте и публикуйте</h1>
-      <p>Изменения сохраняются в репозитории и затем автоматически появляются на сайте. Для входа нужен доступ к репозиторию <strong>wwoland/topmusic-site</strong>.</p>
+      <p>Изменения сохраняются в общем репозитории и затем автоматически появляются на сайте. Для входа нужен доступ к <strong>wwoland/topmusic-site</strong>.</p>
       <form id="loginForm">
         <label for="token">GitHub-токен с правом записи в репозиторий</label>
         <div class="token-row"><input id="token" type="password" autocomplete="off" spellcheck="false" required placeholder="github_pat_…"><button class="primary" type="submit">Войти</button></div>
       </form>
-      <p class="hint">Если вы владелец репозитория, используйте ограниченный токен с Contents: read and write. Если вы приглашённый соавтор, GitHub пока требует токен classic с правом public_repo. Токен не сохраняется в браузере. <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer">Создать токен ↗</a></p>
+      <p class="hint">Каждый участник входит со своим GitHub-токеном. Владелец может использовать ограниченный токен с Contents: read and write; приглашённому соавтору нужен токен classic с правом public_repo. Токен не сохраняется в браузере. <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer">Создать токен ↗</a></p>
     </section>
 
     <section id="editorPanel" hidden>
