@@ -194,11 +194,12 @@
 
   function groupName(element) {
     const section = element.closest('section') || element.closest('header,nav,footer,main');
-    if (!section) return 'Остальное';
-    if (section.tagName === 'NAV') return 'Навигация';
-    if (section.tagName === 'FOOTER') return 'Подвал';
+    if (!section) return 'Дополнительные элементы';
+    if (section.tagName === 'NAV') return 'Меню сайта';
+    if (section.tagName === 'FOOTER') return 'Нижняя часть сайта';
+    if (section.id === 'hero' || section.classList.contains('hero')) return 'Первый экран';
     const heading = section.querySelector('h1,h2,h3');
-    return heading?.textContent.trim().slice(0, 70) || section.id || section.className?.toString().split(' ')[0] || 'Страница';
+    return heading?.textContent.trim().slice(0, 70) || section.id || section.className?.toString().split(' ')[0] || 'Дополнительные элементы';
   }
 
   function addGroup(groups, name) {
@@ -417,9 +418,14 @@
 
     const container = $('pageFields');
     container.replaceChildren();
-    for (const [name, fields] of groups) {
+    const entries = [...groups].sort(([a], [b]) => Number(a === 'Дополнительные элементы') - Number(b === 'Дополнительные элементы'));
+    const selector = $('sectionSelect');
+    selector.replaceChildren(new Option('Все блоки страницы', 'all'));
+    for (const [name, fields] of entries) {
+      selector.add(new Option(name, name));
       const details = document.createElement('details');
       details.className = 'field-group';
+      details.dataset.group = name;
       const summary = document.createElement('summary');
       const title = document.createElement('span');
       title.className = 'group-title';
@@ -434,7 +440,9 @@
       details.append(summary, body);
       container.append(details);
     }
-    container.querySelector('.field-group')?.setAttribute('open', '');
+    const preferred = entries.find(([name]) => name === 'Первый экран')
+      || entries.find(([name]) => !['Меню сайта', 'Нижняя часть сайта', 'Дополнительные элементы'].includes(name));
+    selector.value = preferred?.[0] || entries[0]?.[0] || 'all';
     filterFields();
   }
 
@@ -442,9 +450,11 @@
     const query = $('fieldSearch').value.trim().toLocaleLowerCase('ru');
     let visibleTotal = 0;
     let allTotal = 0;
+    let visibleGroups = 0;
     for (const group of $('pageFields').querySelectorAll('.field-group')) {
       let visible = 0;
-      for (const field of group.querySelectorAll('.field')) {
+      const fields = group.querySelectorAll('.field');
+      for (const field of fields) {
         allTotal++;
         const fieldText = field.querySelector('.field-title')?.textContent || '';
         const values = [...field.querySelectorAll('input,textarea')].map(input => input.value).join(' ');
@@ -454,13 +464,21 @@
         field.hidden = !match;
         if (match) visible++;
       }
-      visibleTotal += visible;
-      group.hidden = !visible;
-      if (query && visible) group.open = true;
+      group.querySelector('.group-count').textContent = visible === fields.length
+        ? `${visible} полей` : `${visible} из ${fields.length} полей`;
+      const inSection = query || $('sectionSelect').value === 'all' || group.dataset.group === $('sectionSelect').value;
+      group.hidden = !visible || !inSection;
+      if (!group.hidden) {
+        visibleTotal += visible;
+        visibleGroups++;
+        if (query || $('sectionSelect').value !== 'all') group.open = true;
+      }
     }
-    $('fieldSearchSummary').textContent = query || fieldFilter !== 'all' ? `Показано ${visibleTotal} из ${allTotal}` : `${allTotal} полей на странице`;
+    $('fieldSearchSummary').textContent = query ? `Найдено ${visibleTotal} на странице`
+      : $('sectionSelect').value === 'all' ? `Показано ${visibleTotal} из ${allTotal}`
+        : `${visibleTotal} полей в блоке`;
     $('fieldEmpty').hidden = visibleTotal > 0;
-    $('toggleGroups').hidden = !visibleTotal;
+    $('toggleGroups').hidden = visibleGroups < 2;
   }
 
   function validLinks() {
@@ -663,6 +681,10 @@
   $('logout').addEventListener('click', () => { token = ''; location.reload(); });
   $('publish').addEventListener('click', publish);
   $('fieldSearch').addEventListener('input', filterFields);
+  $('sectionSelect').addEventListener('change', () => {
+    $('fieldSearch').value = '';
+    filterFields();
+  });
   document.querySelectorAll('[data-field-filter]').forEach(button => button.addEventListener('click', () => {
     fieldFilter = button.dataset.fieldFilter;
     document.querySelectorAll('[data-field-filter]').forEach(item => {
